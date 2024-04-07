@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чаты и сообщения</title>
+    <!-- Подключение Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Дополнительный стиль для сайдбара */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 48px 0 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            width: 250px; /* Увеличил ширину сайдбара */
+        }
+
+        .active-chat {
+            background-color: #f0f0f0; /* Цвет подсветки активного чата */
+        }
+
+        /* Стиль для сообщений */
+        .message-container {
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 20px;
+            max-width: 75%; /* Ограничил максимальную ширину сообщений до 75% экрана */
+            min-width: 10px;
+            display: inline-block; /* Добавлено для контейнера сообщения */
+        }
+
+        .sender {
+            background-color: #007bff; /* Синий цвет для отправителя */
+            color: white;
+            text-align: left; /* Выравнивание текста сообщения справа */
+            right: 0;
+            left: auto;
+            max-width: 30rem;
+            word-wrap: break-word;
+        }
+
+        .receiver {
+            background-color: #28a745; /* Зеленый цвет для получателя */
+            color: white;
+            text-align: left; /* Выравнивание текста сообщения слева */
+        }
+
+        /* Стиль для поля ввода и кнопки */
+        .message-input {
+            position: fixed;
+            bottom: 20px; /* Уменьшил отступ, чтобы сообщения не наезжали на поле ввода */
+            right: 15%;
+            border-radius: 20px;
+            border: 2px solid #ced4da;
+            padding: 10px;
+            width: calc(80% - 250px); /* Увеличил ширину поля ввода сообщения */
+        }
+
+        .message-input:focus {
+            outline: none;
+        }
+
+        .send-button {
+            border-radius: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+        .author {
+            font-size: 12px;
+            color: #777;
+            margin-bottom: 5px;
+            display: block; /* Добавлено для корректного отображения */
+        }
+
+        .client-message-container {
+            text-align: right; /* Выравнивание сообщений клиента справа */
+        }
+    </style>
+</head>
+<body>
+<!-- Сайдбар с чатами -->
+<div class="sidebar bg-light border-right">
+
+    <h3 style="padding-left: 10%">Список чатов</h3>
+    <ul class="list-group" id="chat-list">
+        {% for chat_id, chat_data in chats.items() %}
+        <li class="list-group-item chat {% if loop.first %} active-chat {% endif %}" data-chat-id="{{ chat_id }}">{{
+            chat_data.name }}
+
+            {% endfor %}
+    </ul>
+</div>
+
+<!-- Основная часть с сообщениями -->
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3"></div> <!-- Заглушка для сайдбара -->
+        <div class="col-md-9 mt-4" style="max-height: 100vh">
+            <h3 id="chat-name">Выбранный чат</h3> <!-- Изменил, чтобы отображалось название выбранного чата -->
+            <!-- Поле ввода сообщения -->
+            <div class="custom-control custom-switch" style="max-height: 10vh"> <!-- Добавлено -->
+                <input type="checkbox" class="custom-control-input" id="ai-switch"> <!-- Добавлено -->
+                <label class="custom-control-label" for="ai-switch">Генерировать ответ нейросетью</label>
+                <!-- Добавлено -->
+            </div> <!-- Добавлено --></li>
+            <div class="messages" id="messages-container" style="max-height: 83vh !important; overflow-y: auto">
+                <!-- Здесь будут сообщения -->
+            </div>
+
+            <div class="input-group message-input" style="max-height: 10vh">
+                <input type="text" class="form-control" placeholder="Введите сообщение" id="message-input">
+                <div class="input-group-append">
+                    <button class="btn send-button" type="button" id="send-button">Отправить</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Подключение Bootstrap JavaScript (необходимо для работы некоторых компонентов Bootstrap) -->
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var chatList = document.getElementById("chat-list");
+        var messagesContainer = document.getElementById("messages-container");
+        var messageInput = document.getElementById("message-input");
+        var aiSwitch = document.getElementById("ai-switch");
+
+        var sendButton = document.getElementById("send-button");
+        var firstChat = document.querySelector('.chat');
+        if (firstChat) {
+            var firstChatId = firstChat.getAttribute("data-chat-id");
+            loadMessages(firstChatId);
+        }
+
+        function loadMessages(chatId) {
+            messagesContainer.innerHTML = "";
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/messages/" + chatId);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 200) {
+                        var messages = JSON.parse(xhr.responseText);
+                        var aiSwitch = document.getElementById("ai-switch");
+                        aiSwitch.checked = messages['ai_status'];
+                        messages['messages'].forEach(function (message) {
+                            var messageElement = document.createElement("div");
+                            messageElement.classList.add("message-container");
+                            var senderClass = message.sender === "мы" ? "sender" : "receiver";
+                            var author = message.sender === "мы" ? "Мы" : message.sender;
+                            var containerClass = message.sender === "мы" ? "client-message-container" : "";
+
+                            messageElement.innerHTML = "<div class='author'>" + author + "</div><div class='message " + senderClass + " " + containerClass + "'>" + message.text + "</div>";
+                            messagesContainer.appendChild(messageElement);
+                        });
+                    } else {
+                        console.error("Ошибка загрузки сообщений:", xhr.status);
+                    }
+                }
+            };
+            xhr.send();
+        }
+
+        chatList.addEventListener("click", function (event) {
+            var chatElement = event.target.closest(".chat");
+            if (chatElement) {
+                var allChatElements = chatList.getElementsByClassName("chat");
+                for (var i = 0; i < allChatElements.length; i++) {
+                    allChatElements[i].classList.remove("active-chat");
+                }
+                chatElement.classList.add("active-chat");
+                var chatId = parseInt(chatElement.getAttribute("data-chat-id"));
+                var chatName = chatElement.textContent; // Получаем название выбранного чата
+                document.getElementById("chat-name").textContent = chatName; // Обновляем название чата на странице
+                loadMessages(chatId);
+            }
+        });
+
+        sendButton.addEventListener("click", function () {
+            var message = messageInput.value.trim();
+            if (message !== "") {
+                var messageElement = document.createElement("div");
+                messageElement.classList.add("message-container");
+                messageElement.innerHTML = "<div class='author'>Мы</div><div class='message sender'>" + message + "</div>";
+                messagesContainer.appendChild(messageElement);
+                messageInput.value = "";
+
+                var chatElement = document.querySelector(".active-chat");
+                var chatId = parseInt(chatElement.getAttribute("data-chat-id"));
+
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "/send_message/" + chatId);
+                xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        if (xhr.status === 200) {
+                            console.log("Сообщение успешно отправлено.");
+                        } else {
+                            console.error("Ошибка при отправке сообщения:", xhr.status);
+                        }
+                    }
+                };
+                xhr.send("message=" + encodeURIComponent(message));
+            }
+        });
+
+        function setAIStatus(status) {
+            var xhr = new XMLHttpRequest();
+
+            var chatElement = document.querySelector(".active-chat");
+            var chatId = parseInt(chatElement.getAttribute("data-chat-id"));
+            xhr.open("POST", "/set-ai-status/");
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 200) {
+                        console.log("Статус успешно отправлен.");
+                    } else {
+                        console.error("Ошибка при отправке статуса:", xhr.status);
+                    }
+                }
+            };
+            xhr.send("status=" + encodeURIComponent(status) + "&chat_id=" + chatId);
+        }
+
+        // Обработчик изменения состояния переключателя
+        aiSwitch.addEventListener("change", function () {
+            var status = aiSwitch.checked; // true, если переключатель включен, false - если выключен
+            setAIStatus(status);
+        });
+
+    });
+</script>
+</body>
+</html>

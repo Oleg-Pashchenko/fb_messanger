@@ -1,34 +1,8 @@
 from flask import Flask, render_template, jsonify, request
 
-from app.prosto_messenger import db
+import db
 
 app = Flask(__name__)
-
-chats = {
-    1: {'name': 'Чат 1',
-        'messages': [
-            {'text': 'Сообщение 1', 'sender': 'мы'}, {'text': 'Сообщение 2', 'sender': 'собеседник'},
-            {'text': 'Сообщение 1', 'sender': 'мы'}, {'text': 'Сообщение 2', 'sender': 'собеседник'},
-            {'text': 'Сообщение 1', 'sender': 'мы'}, {'text': 'Сообщение 2', 'sender': 'собеседник'},
-            {'text': 'Сообщение 1', 'sender': 'мы'}, {'text': 'Сообщение 2', 'sender': 'собеседник'},
-            {'text': 'Сообщение 1', 'sender': 'мы'}, {'text': 'Сообщение 2', 'sender': 'собеседник'},
-            {'text': 'Сообщение 1', 'sender': 'мы'}, {'text': 'Сообщение 2', 'sender': 'собеседник'},
-            {'text': 'Сообщение 1', 'sender': 'мы'}, {'text': 'Сообщение 2', 'sender': 'собеседник'},
-            {'text': 'Сообщение 1', 'sender': 'мы'}, {'text': 'Сообщение 2', 'sender': 'собеседник'},
-            {'text': 'Сообщение 1', 'sender': 'мы'}, {'text': 'Сообщение 2', 'sender': 'собеседник'},
-            {'text': 'Сообщение 1', 'sender': 'мы'}, {'text': 'Сообщение 2', 'sender': 'собеседник'},
-            {'text': 'Сообщение 1', 'sender': 'мы'}, {'text': 'Сообщение 2', 'sender': 'собеседник'},
-            {'text': 'Сообщение 1', 'sender': 'мы'}, {'text': 'Сообщение 2', 'sender': 'собеседник'},
-            {'text': 'Сообщение 1', 'sender': 'мы'}, {'text': 'Сообщение 2', 'sender': 'собеседник'},
-            {'text': 'Сообщение 1', 'sender': 'мы'}, {'text': 'Сообщение 2', 'sender': 'собеседник'},
-            {'text': 'Сообщение 1', 'sender': 'мы'}, {'text': 'Сообщение 2', 'sender': 'собеседник'},
-
-        ]},
-    2: {'name': 'Чат 2',
-        'messages': [{'text': 'Сообщение 3', 'sender': 'мы'}, {'text': 'Сообщение 4', 'sender': 'собеседник'}]},
-    3: {'name': 'Чат 3',
-        'messages': [{'text': 'Сообщение 5', 'sender': 'мы'}, {'text': 'Сообщение 6', 'sender': 'собеседник'}]},
-}
 
 
 @app.route('/')
@@ -54,13 +28,9 @@ def get_messages(chat_id):
 
 @app.route('/send_message/<int:chat_id>', methods=['POST'])
 def send_message(chat_id):
-    if chat_id in chats:
-        message_text = request.form['message']
-        db.save_message(chat_id, 'мы', message_text)
-        #  chats[chat_id]['messages'].append(message)
-        return jsonify(success=True)
-    else:
-        return jsonify(success=False)
+    message_text = request.form['message']
+    db.save_message(chat_id, 'мы', message_text)
+    return jsonify(success=True)
 
 
 @app.route('/set-ai-status/', methods=['POST'])
@@ -72,4 +42,4 @@ def set_ai_status():
 
 
 if __name__ == '__main__':
-    app.run(port=8000, debug=True)
+    app.run(port=8080, debug=True)

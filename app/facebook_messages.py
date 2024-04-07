@@ -1,20 +1,11 @@
 import time
 
 from selenium.webdriver import Keys
-from selenium.webdriver.support import expected_conditions as EC
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.wait import WebDriverWait
 import bs4
 import dataclasses
 from datetime import datetime, timedelta
-
-from app import telegram_send_message
-from app.openai_connector import ask_gpt
-
-email = '89930709395'
-password = 'gelo23122003A!'
 
 
 def convert_message_time(message_time):
@@ -102,22 +93,14 @@ def send_message(link, text):
 
 
 while True:
-    try:
-        driver.get(MESSNGER_URL)
-        auth(email, password)
-        time.sleep(10)
-        # close_alert()
-        messages = read_new_messages()
-    except Exception as e:
-        print('error', e)
-    time.sleep(180)
-
-# for message in messages:
-#     print(message)
-#     telegram_send_message.send_message(f'Email: {email}\n\nMessage: {message}')
-# for message in messages:
-#     answer = ask_gpt(message.text)
-#     send_message(message.link, answer)
-
-driver.close()
-# print(*messages, sep='\n')
+    for account in accounts:
+        try:
+            driver.get(MESSNGER_URL)
+            auth(email, password)
+            time.sleep(10)
+            messages = read_new_messages()
+            print(messages)
+        except Exception as e:
+            print('error', e)
+        finally:
+            driver.close()
